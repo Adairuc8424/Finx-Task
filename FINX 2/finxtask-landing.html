@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finx-Task — Gestión de tareas inteligente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --surface2:  #17171f;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.12);
+      --accent:    #5b5ef4;
+      --accent2:   #7c7ff6;
+      --accent-glow: rgba(91,94,244,0.35);
+      --teal:      #18c8a0;
+      --amber:     #f0a23a;
+      --rose:      #f06a6a;
+      --text:      #f0eff8;
+      --text2:     #9997b8;
+      --text3:     #5c5a78;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --r:         14px;
+      --r-lg:      20px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE OVERLAY ─────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ─── GRADIENT BLOBS ─────────────────────────────── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 { width: 600px; height: 600px; background: rgba(91,94,244,0.18); top: -180px; left: -100px; }
+    .blob-2 { width: 500px; height: 500px; background: rgba(24,200,160,0.12); bottom: 10%; right: -100px; }
+    .blob-3 { width: 400px; height: 400px; background: rgba(240,162,58,0.08); top: 50%; left: 40%; }
+
+    /* ─── NAV ─────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      height: 66px;
+      background: rgba(10,10,15,0.75);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 34px; height: 34px;
+      background: var(--accent);
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+      letter-spacing: -0.5px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .logo-text {
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 17px;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .logo-text span { color: var(--accent2); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 400;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-ghost {
+      padding: 8px 18px;
+      border: 1px solid var(--border2);
+      border-radius: 50px;
+      background: transparent;
+      color: var(--text2);
+      font-family: var(--font-body);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .2s;
+      text-decoration: none;
+    }
+    .btn-ghost:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    .btn-primary {
+      padding: 9px 20px;
+      border-radius: 50px;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      text-decoration: none;
+      box-shadow: 0 0 18px var(--accent-glow);
+    }
+    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 24px var(--accent-glow); }
+
+    /* ─── LAYOUT WRAPPER ─────────────────────────────── */
+    .wrap { position: relative; z-index: 1; }
+    section { padding: clamp(5rem, 10vw, 7rem) clamp(1.5rem, 5vw, 4rem); max-width: 1200px; margin: 0 auto; }
+
+    /* ─── HERO ───────────────────────────────────────── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding-top: 10rem;
+      padding-bottom: 5rem;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px 5px 8px;
+      background: rgba(91,94,244,0.12);
+      border: 1px solid rgba(91,94,244,0.3);
+      border-radius: 50px;
+      font-size: 12px;
+      color: var(--accent2);
+      margin-bottom: 2rem;
+      animation: fadeUp .6s ease both;
+    }
+    .hero-tag-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2.8rem, 6vw, 5.2rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      color: var(--text);
+      max-width: 820px;
+      margin-bottom: 1.5rem;
+      animation: fadeUp .7s .1s ease both;
+    }
+    h1 .gradient-text {
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--teal) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      color: var(--text2);
+      max-width: 560px;
+      font-weight: 300;
+      line-height: 1.75;
+      margin-bottom: 2.5rem;
+      animation: fadeUp .7s .2s ease both;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 4rem;
+      animation: fadeUp .7s .3s ease both;
+    }
+
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 30px;
+      border-radius: 50px;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 0 32px var(--accent-glow);
+      transition: all .25s;
+    }
+    .btn-hero:hover { transform: translateY(-2px); box-shadow: 0 8px 40px var(--accent-glow); background: var(--accent2); }
+
+    .btn-hero-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 30px;
+      border-radius: 50px;
+      border: 1px solid var(--border2);
+      background: rgba(255,255,255,0.03);
+      color: var(--text2);
+      font-family: var(--font-body);
+      font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .25s;
+    }
+    .btn-hero-ghost:hover { border-color: var(--border2); color: var(--text); background: rgba(255,255,255,0.06); transform: translateY(-2px); }
+
+    /* ─── HERO STATS ─────────────────────────────────── */
+    .hero-stats {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp .7s .4s ease both;
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stat-val {
+      font-family: var(--font-head);
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -1px;
+    }
+    .stat-lbl { font-size: 12px; color: var(--text3); }
+    .stat-divider { width: 1px; height: 36px; background: var(--border); }
+
+    /* ─── DASHBOARD MOCKUP ───────────────────────────── */
+    .mockup-wrap {
+      margin: 0 auto;
+      max-width: 900px;
+      animation: fadeUp .8s .5s ease both;
+    }
+    .mockup-browser {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 60px rgba(91,94,244,0.1);
+    }
+    .mockup-bar {
+      background: var(--surface2);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-dots { display: flex; gap: 7px; }
+    .mockup-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+    .mockup-dot:nth-child(1) { background: #f06a6a; }
+    .mockup-dot:nth-child(2) { background: #f0a23a; }
+    .mockup-dot:nth-child(3) { background: #18c8a0; }
+    .mockup-url {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 11px;
+      color: var(--text3);
+      text-align: center;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    /* Dashboard UI inside mockup */
+    .dash {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      min-height: 380px;
+    }
+    .dash-side {
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+      padding: 1rem 0;
+    }
+    .dash-side-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: .75rem 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: .75rem;
+    }
+    .dash-logo-mark {
+      width: 26px; height: 26px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 11px;
+      color: #fff;
+    }
+    .dash-logo-text { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--text); }
+
+    .dash-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 1rem;
+      font-size: 12px;
+      color: var(--text3);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .dash-nav-item.active { color: var(--text); background: rgba(91,94,244,0.12); border-right: 2px solid var(--accent); }
+    .dash-nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .5; }
+
+    .dash-main { padding: 1.25rem; overflow: hidden; }
+    .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .dash-title { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--text); }
+    .dash-new-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .dash-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .dash-metric {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .dash-metric-val { font-family: var(--font-head); font-size: 18px; font-weight: 700; color: var(--text); line-height: 1; }
+    .dash-metric-lbl { font-size: 10px; color: var(--text3); margin-top: 3px; }
+    .dm-accent { border-top: 2px solid var(--accent); }
+    .dm-teal   { border-top: 2px solid var(--teal); }
+    .dm-amber  { border-top: 2px solid var(--amber); }
+
+    .dash-tasks { display: flex; flex-direction: column; gap: 6px; }
+    .dash-task {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .task-check {
+      width: 14px; height: 14px;
+      border-radius: 4px;
+      border: 1.5px solid;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+    }
+    .task-check.done { background: var(--teal); border-color: var(--teal); }
+    .task-check.done::after { content: '✓'; font-size: 8px; color: var(--bg); font-weight: 700; }
+    .task-check.todo { border-color: var(--text3); }
+    .task-name { flex: 1; color: var(--text2); }
+    .task-name.done { color: var(--text3); text-decoration: line-through; }
+    .task-badge {
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 500;
+    }
+    .badge-alta  { background: rgba(240,106,106,0.15); color: var(--rose); }
+    .badge-media { background: rgba(240,162,58,0.15);  color: var(--amber); }
+    .badge-baja  { background: rgba(24,200,160,0.15);  color: var(--teal); }
+    .task-ai-tag {
+      display: flex; align-items: center; gap: 3px;
+      padding: 2px 7px; border-radius: 4px; font-size: 9px;
+      background: rgba(91,94,244,0.15); color: var(--accent2);
+    }
+
+    /* ─── FEATURES ───────────────────────────────────── */
+    #features { padding-top: 2rem; }
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent2);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .75rem;
+    }
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1px;
+      background: var(--accent);
+    }
+    h2 {
+      font-family: var(--font-head);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--text2);
+      font-weight: 300;
+      max-width: 540px;
+      margin-bottom: 3rem;
+      line-height: 1.7;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .feat-card {
+      background: var(--surface);
+      padding: 2rem;
+      transition: background .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feat-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(91,94,244,0.08), transparent 60%);
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .feat-card:hover { background: var(--surface2); }
+    .feat-card:hover::after { opacity: 1; }
+
+    .feat-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      margin-bottom: 1.1rem;
+    }
+    .fi-purple { background: rgba(91,94,244,0.15); }
+    .fi-teal   { background: rgba(24,200,160,0.15); }
+    .fi-amber  { background: rgba(240,162,58,0.15); }
+    .fi-rose   { background: rgba(240,106,106,0.15); }
+
+    .feat-title {
+      font-family: var(--font-head);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: .5rem;
+      letter-spacing: -0.3px;
+    }
+    .feat-desc { font-size: .875rem; color: var(--text2); line-height: 1.65; font-weight: 300; }
+    .feat-new {
+      display: inline-block;
+      padding: 2px 8px;
+      background: rgba(91,94,244,0.15);
+      color: var(--accent2);
+      font-size: 10px;
+      border-radius: 4px;
+      font-weight: 500;
+      margin-bottom: .5rem;
+    }
+
+    /* ─── AI SECTION ─────────────────────────────────── */
+    #ai-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+    .ai-visual {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .ai-header {
+      background: var(--surface2);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text2);
+    }
+    .ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+    .ai-chat { padding: 1.25rem; display: flex; flex-direction: column; gap: 10px; }
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .msg-user { background: var(--accent); color: #fff; align-self: flex-end; border-radius: 12px 12px 2px 12px; }
+    .msg-ai { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); border-radius: 12px 12px 12px 2px; }
+    .msg-ai strong { color: var(--teal); font-weight: 500; }
+    .typing { display: flex; align-items: center; gap: 4px; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px 12px 12px 2px; width: fit-content; }
+    .typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); animation: typing .9s ease-in-out infinite; }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes typing { 0%, 100% { transform: translateY(0); opacity: .4; } 50% { transform: translateY(-4px); opacity: 1; } }
+
+    .ai-content { }
+    .ai-features { margin-top: 1.5rem; display: flex; flex-direction: column; gap: .85rem; }
+    .ai-feat { display: flex; align-items: flex-start; gap: 12px; }
+    .ai-feat-icon { font-size: 18px; margin-top: 1px; flex-shrink: 0; }
+    .ai-feat-title { font-size: .9rem; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+    .ai-feat-desc  { font-size: .8rem; color: var(--text2); font-weight: 300; line-height: 1.55; }
+
+    /* ─── INTEGRATIONS ───────────────────────────────── */
+    #integrations { padding-top: 3rem; padding-bottom: 3rem; text-align: center; }
+    .int-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 2.5rem;
+    }
+    .int-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text2);
+      transition: all .2s;
+      cursor: default;
+    }
+    .int-card:hover { border-color: var(--border2); color: var(--text); transform: translateY(-2px); }
+    .int-icon { font-size: 22px; }
+
+    /* ─── PRICING ────────────────────────────────────── */
+    #pricing { padding-top: 3rem; padding-bottom: 3rem; text-align: center; }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 2.5rem;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .price-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 2rem;
+      text-align: left;
+      transition: all .2s;
+    }
+    .price-card:hover { transform: translateY(-3px); }
+    .price-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 40px rgba(91,94,244,0.15);
+    }
+    .price-tag { font-size: 11px; font-weight: 500; color: var(--accent2); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: .08em; }
+    .price-tag.free { color: var(--teal); }
+    .price-amount {
+      font-family: var(--font-head);
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: .25rem;
+    }
+    .price-amount span { font-size: 1rem; font-weight: 400; color: var(--text3); letter-spacing: 0; }
+    .price-desc { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; font-weight: 300; }
+    .price-feats { list-style: none; display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1.5rem; }
+    .price-feats li {
+      font-size: .85rem;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .price-feats li::before { content: '✓'; color: var(--teal); font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .price-feats li.no::before { content: '✗'; color: var(--text3); }
+    .price-feats li.no { color: var(--text3); }
+
+    .btn-plan {
+      width: 100%;
+      padding: 11px;
+      border-radius: 50px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text2);
+    }
+    .btn-plan:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .btn-plan.accent { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-plan.accent:hover { background: var(--accent2); transform: translateY(-1px); }
+
+    /* ─── CTA BANNER ─────────────────────────────────── */
+    #cta {
+      padding: 4rem clamp(1.5rem, 5vw, 4rem);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(91,94,244,0.2) 0%, rgba(24,200,160,0.1) 100%);
+      border: 1px solid rgba(91,94,244,0.3);
+      border-radius: 24px;
+      padding: clamp(2.5rem, 5vw, 4rem);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(91,94,244,0.2), transparent 70%);
+      top: -150px; left: 50%; transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .cta-box h2 { margin-bottom: .75rem; position: relative; }
+    .cta-box p  { color: var(--text2); font-weight: 300; margin-bottom: 2rem; position: relative; }
+    .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+    /* ─── FOOTER ─────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem clamp(1.5rem, 5vw, 4rem);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-copy { font-size: 13px; color: var(--text3); }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a { font-size: 13px; color: var(--text3); text-decoration: none; transition: color .2s; }
+    .footer-links a:hover { color: var(--text2); }
+
+    /* ─── ANIMATIONS ─────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ─── RESPONSIVE ─────────────────────────────────── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      #ai-section { grid-template-columns: 1fr; }
+      .dash { grid-template-columns: 1fr; }
+      .dash-side { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Background blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- ─── NAV ───────────────────────────────────────────── -->
+<nav>
+  <a href="#" class="logo">
+    <div class="logo-mark">Fx</div>
+    <span class="logo-text">Finx<span>-Task</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Funciones</a></li>
+    <li><a href="#ai-section">IA</a></li>
+    <li><a href="#integrations">Integraciones</a></li>
+    <li><a href="#pricing">Precios</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="finxtask-auth.html" class="btn-ghost">Iniciar sesión</a>
+    <a href="finxtask-auth.html" class="btn-primary">Comenzar gratis →</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ─── HERO ──────────────────────────────────────── -->
+  <section id="hero">
+    <div class="hero-tag">
+      <div class="hero-tag-dot"></div>
+      Ahora con IA integrada — Claude AI
+    </div>
+
+    <h1>Organiza tu equipo.<br><span class="gradient-text">Multiplica tu productividad.</span></h1>
+
+    <p class="hero-sub">
+      Finx-Task combina gestión ágil de tareas, colaboración en tiempo real e inteligencia artificial para que tu equipo siempre sepa qué hacer y cuándo hacerlo.
+    </p>
+
+    <div class="hero-actions">
+      <a href="finxtask-auth.html" class="btn-hero">
+        Empieza gratis
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#features" class="btn-hero-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+        Ver demo
+      </a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-val">+20%</span>
+        <span class="stat-lbl">productividad</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-val">−30%</span>
+        <span class="stat-lbl">tiempo de respuesta</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-val">90%</span>
+        <span class="stat-lbl">satisfacción de usuarios</span>
+      </div>
+    </div>
+
+    <!-- MOCKUP -->
+    <div class="mockup-wrap" style="margin-top: 4rem; width: 100%;">
+      <div class="mockup-browser">
+        <div class="mockup-bar">
+          <div class="mockup-dots">
+            <div class="mockup-dot"></div>
+            <div class="mockup-dot"></div>
+            <div class="mockup-dot"></div>
+          </div>
+          <div class="mockup-url">app.finxtask.io/dashboard</div>
+        </div>
+        <div class="dash">
+          <div class="dash-side">
+            <div class="dash-side-logo">
+              <div class="dash-logo-mark">Fx</div>
+              <span class="dash-logo-text">Finx-Task</span>
+            </div>
+            <div class="dash-nav-item active"><span class="dash-nav-dot"></span> Dashboard</div>
+            <div class="dash-nav-item"><span class="dash-nav-dot"></span> Mis tareas</div>
+            <div class="dash-nav-item"><span class="dash-nav-dot"></span> Proyectos</div>
+            <div class="dash-nav-item"><span class="dash-nav-dot"></span> Equipo</div>
+            <div class="dash-nav-item"><span class="dash-nav-dot"></span> Informes</div>
+            <div class="dash-nav-item" style="color: var(--accent2);"><span class="dash-nav-dot" style="background:var(--accent)"></span> ✦ Asistente IA</div>
+          </div>
+          <div class="dash-main">
+            <div class="dash-header">
+              <span class="dash-title">Dashboard — Hoy</span>
+              <button class="dash-new-btn">+ Nueva tarea</button>
+            </div>
+            <div class="dash-metrics">
+              <div class="dash-metric dm-accent">
+                <div class="dash-metric-val">12</div>
+                <div class="dash-metric-lbl">Tareas activas</div>
+              </div>
+              <div class="dash-metric dm-teal">
+                <div class="dash-metric-val">7</div>
+                <div class="dash-metric-lbl">Completadas hoy</div>
+              </div>
+              <div class="dash-metric dm-amber">
+                <div class="dash-metric-val">3</div>
+                <div class="dash-metric-lbl">Vencen pronto</div>
+              </div>
+            </div>
+            <div class="dash-tasks">
+              <div class="dash-task">
+                <div class="task-check done"></div>
+                <span class="task-name done">Revisar propuesta de diseño UI</span>
+                <span class="task-badge badge-alta">Alta</span>
+              </div>
+              <div class="dash-task">
+                <div class="task-check todo"></div>
+                <span class="task-name">Implementar módulo de autenticación</span>
+                <span class="task-badge badge-alta">Alta</span>
+                <span class="task-ai-tag">✦ IA</span>
+              </div>
+              <div class="dash-task">
+                <div class="task-check todo"></div>
+                <span class="task-name">Conectar API de Google Calendar</span>
+                <span class="task-badge badge-media">Media</span>
+              </div>
+              <div class="dash-task">
+                <div class="task-check todo"></div>
+                <span class="task-name">Redactar documentación de endpoints</span>
+                <span class="task-badge badge-baja">Baja</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ──────────────────────────────────── -->
+  <section id="features">
+    <div class="reveal">
+      <div class="section-label">Funcionalidades</div>
+      <h2>Todo lo que necesita<br>tu equipo para fluir</h2>
+      <p class="section-sub">Desde la creación de tareas hasta informes de productividad. Finx-Task cubre todo el ciclo de trabajo en equipo.</p>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feat-card">
+        <div class="feat-icon fi-purple">📋</div>
+        <div class="feat-title">Gestión de tareas</div>
+        <p class="feat-desc">Crea, asigna y prioriza tareas con fechas límite, estados y etiquetas. Visualiza tu trabajo en tablero Kanban o lista.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-teal">👥</div>
+        <div class="feat-title">Colaboración en tiempo real</div>
+        <p class="feat-desc">Comenta, menciona a compañeros y recibe notificaciones instantáneas. Tu equipo siempre sincronizado.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-amber">✦</div>
+        <div class="feat-new">Nuevo — IA</div>
+        <div class="feat-title">Resúmenes con IA</div>
+        <p class="feat-desc">La IA genera resúmenes automáticos del estado del proyecto, sugiere prioridades y desglosa tareas complejas en subtareas accionables.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-rose">📊</div>
+        <div class="feat-title">Informes y estadísticas</div>
+        <p class="feat-desc">Reportes semanales y mensuales de productividad. Identifica cuellos de botella y mide el rendimiento del equipo.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-teal">🔔</div>
+        <div class="feat-title">Recordatorios inteligentes</div>
+        <p class="feat-desc">Notificaciones por correo, Slack o Teams cuando se acercan fechas límite. Nunca más olvides una tarea importante.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon fi-purple">🔒</div>
+        <div class="feat-title">Seguridad y privacidad</div>
+        <p class="feat-desc">Autenticación segura, roles de usuario y control de permisos. Tus datos siempre protegidos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── AI SECTION ────────────────────────────────── -->
+  <section>
+    <div id="ai-section">
+      <div class="ai-visual reveal">
+        <div class="ai-header">
+          <div class="ai-dot"></div>
+          Asistente IA — Finx-Task
+        </div>
+        <div class="ai-chat">
+          <div class="msg msg-user">¿Cuáles son las tareas más urgentes del proyecto esta semana?</div>
+          <div class="msg msg-ai">
+            <strong>Analizando tu backlog…</strong><br><br>
+            Tienes <strong>3 tareas críticas</strong> que vencen antes del viernes:<br>
+            1. Autenticación de usuarios — bloquea 2 tareas dependientes<br>
+            2. API de notificaciones — en progreso<br>
+            3. Tests de integración — sin asignar<br><br>
+            ¿Quieres que genere subtareas para la autenticación?
+          </div>
+          <div class="msg msg-user">Sí, genera las subtareas</div>
+          <div class="typing">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="ai-content reveal">
+        <div class="section-label">Inteligencia artificial</div>
+        <h2>Tu copiloto de productividad</h2>
+        <p class="section-sub" style="margin-bottom:0">Powered by Claude AI — el mismo modelo detrás de Claude.ai.</p>
+        <div class="ai-features">
+          <div class="ai-feat">
+            <span class="ai-feat-icon">📝</span>
+            <div>
+              <div class="ai-feat-title">Resúmenes automáticos</div>
+              <div class="ai-feat-desc">Obtén el estado de tu proyecto en lenguaje natural. Sin leer cada tarea una por una.</div>
+            </div>
+          </div>
+          <div class="ai-feat">
+            <span class="ai-feat-icon">⚡</span>
+            <div>
+              <div class="ai-feat-title">Sugerencias de prioridad</div>
+              <div class="ai-feat-desc">La IA analiza dependencias, fechas y carga de trabajo para decirte qué abordar primero.</div>
+            </div>
+          </div>
+          <div class="ai-feat">
+            <span class="ai-feat-icon">🔀</span>
+            <div>
+              <div class="ai-feat-title">Desglose de tareas complejas</div>
+              <div class="ai-feat-desc">Escribe una tarea grande y la IA la divide en subtareas concretas y asignables.</div>
+            </div>
+          </div>
+          <div class="ai-feat">
+            <span class="ai-feat-icon">📈</span>
+            <div>
+              <div class="ai-feat-title">Informes narrativos</div>
+              <div class="ai-feat-desc">Reportes de productividad escritos en prosa clara, no solo gráficas — con insights accionables.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── INTEGRATIONS ──────────────────────────────── -->
+  <section id="integrations">
+    <div class="reveal">
+      <div class="section-label">Integraciones</div>
+      <h2>Conecta con tus herramientas</h2>
+      <p class="section-sub" style="max-width: 100%">Finx-Task se integra nativamente con las plataformas que ya usa tu equipo. Sin fricciones.</p>
+    </div>
+    <div class="int-grid reveal">
+      <div class="int-card"><span class="int-icon">📅</span> Google Calendar</div>
+      <div class="int-card"><span class="int-icon">💬</span> Slack</div>
+      <div class="int-card"><span class="int-icon">🏢</span> Microsoft 365</div>
+      <div class="int-card"><span class="int-icon">👥</span> Microsoft Teams</div>
+      <div class="int-card"><span class="int-icon">✉️</span> Email / SMTP</div>
+      <div class="int-card"><span class="int-icon">🔗</span> Webhooks / REST API</div>
+      <div class="int-card"><span class="int-icon">⚡</span> Zapier</div>
+      <div class="int-card"><span class="int-icon">🎓</span> Moodle</div>
+    </div>
+  </section>
+
+  <!-- ─── PRICING ───────────────────────────────────── -->
+  <section id="pricing">
+    <div class="reveal">
+      <div class="section-label">Precios</div>
+      <h2>Empieza gratis,<br>escala cuando crezcas</h2>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="price-card">
+        <div class="price-tag free">Básico</div>
+        <div class="price-amount">$0<span> /mes</span></div>
+        <p class="price-desc">Hasta 5 usuarios. Para proyectos personales y equipos pequeños.</p>
+        <ul class="price-feats">
+          <li>Hasta 5 usuarios</li>
+          <li>50 tareas activas</li>
+          <li>Tablero Kanban</li>
+          <li>Notificaciones por email</li>
+          <li class="no">IA y resúmenes</li>
+          <li class="no">Integraciones nativas</li>
+          <li class="no">Informes avanzados</li>
+        </ul>
+        <button class="btn-plan">Comenzar gratis</button>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tag">Pro</div>
+        <div class="price-amount">$49<span> /usuario/mes</span></div>
+        <p class="price-desc">Colaboración avanzada + IA + integraciones. Para equipos serios.</p>
+        <ul class="price-feats">
+          <li>Usuarios ilimitados</li>
+          <li>Tareas ilimitadas</li>
+          <li>Tablero Kanban + Lista</li>
+          <li>Notificaciones multicanal</li>
+          <li>✦ IA y resúmenes automáticos</li>
+          <li>Google Calendar, Slack, Teams</li>
+          <li>Informes narrativos con IA</li>
+        </ul>
+        <button class="btn-plan accent">Comenzar Pro →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CTA ───────────────────────────────────────── -->
+  <div id="cta">
+    <div class="cta-box reveal">
+      <h2>¿Listo para organizar<br><span class="gradient-text">tu equipo con IA?</span></h2>
+      <p>Únete gratis hoy. Sin tarjeta de crédito. Configura tu primer proyecto en minutos.</p>
+      <div class="cta-actions">
+        <a href="finxtask-auth.html" class="btn-hero">Crear cuenta gratis →</a>
+        <a href="#features" class="btn-hero-ghost">Ver documentación</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── FOOTER ────────────────────────────────────── -->
+  <footer>
+    <div class="footer-copy">© 2025 Finx-Task. Todos los derechos reservados.</div>
+    <div class="footer-links">
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+      <a href="#">Contacto</a>
+      <a href="#">GitHub</a>
+    </div>
+  </footer>
+
+</div><!-- /.wrap -->
+
+<script>
+  // Reveal on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Blob subtle mouse parallax
+  document.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 30;
+    const y = (e.clientY / window.innerHeight - 0.5) * 30;
+    document.querySelector('.blob-1').style.transform = `translate(${x * 0.4}px, ${y * 0.4}px)`;
+    document.querySelector('.blob-3').style.transform = `translate(${-x * 0.3}px, ${-y * 0.3}px)`;
+  });
+
+  // Simulate typing loop in AI chat
+  const typing = document.querySelector('.typing');
+  const chat = document.querySelector('.ai-chat');
+  setTimeout(() => {
+    if (typing) {
+      const reply = document.createElement('div');
+      reply.className = 'msg msg-ai';
+      reply.style.opacity = '0';
+      reply.style.transition = 'opacity .5s';
+      reply.innerHTML = `<strong>Subtareas creadas ✓</strong><br><br>
+        — Diseñar modelo de base de datos (Users)<br>
+        — Implementar JWT + sesiones<br>
+        — Crear endpoints /login y /register<br>
+        — Tests de autenticación<br><br>
+        Las asigné al sprint actual. ¿Las quieres en el tablero?`;
+      typing.replaceWith(reply);
+      requestAnimationFrame(() => { reply.style.opacity = '1'; });
+    }
+  }, 3200);
+</script>
+
+</body>
+</html>
