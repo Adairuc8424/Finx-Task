@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finx-Task — Acceder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a0f;--surface:#111118;--surface2:#17171f;
+      --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+      --accent:#5b5ef4;--accent2:#7c7ff6;--accent-glow:rgba(91,94,244,0.3);
+      --teal:#18c8a0;--rose:#f06a6a;
+      --text:#f0eff8;--text2:#9997b8;--text3:#5c5a78;
+      --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+    }
+    html{height:100%;overflow:hidden}
+    body{
+      background:var(--bg);color:var(--text);
+      font-family:var(--font-body);height:100%;
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
+    }
+
+    /* Decorative blobs */
+    .blob{
+      position:absolute;width:500px;height:500px;
+      background:var(--accent);filter:blur(140px);
+      border-radius:50%;opacity:0.15;z-index:-1;
+    }
+    .blob-1{top:-10%;left:-10%}
+    .blob-2{bottom:-10%;right:-10%;background:var(--teal)}
+
+    .container{
+      position:relative;width:850px;max-width:95vw;height:580px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:32px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.5);
+    }
+
+    .form-container{
+      position:absolute;top:0;height:100%;
+      transition:all 0.7s cubic-bezier(0.645,0.045,0.355,1);
+    }
+    .sign-in-container{left:0;width:50%;z-index:2}
+    .sign-up-container{left:0;width:50%;opacity:0;z-index:1}
+
+    .container.right-panel-active .sign-in-container{transform:translateX(100%);opacity:0}
+    .container.right-panel-active .sign-up-container{transform:translateX(100%);opacity:1;z-index:5;animation:show 0.7s}
+
+    @keyframes show{ 0%,49.9%{opacity:0;z-index:1} 50%,100%{opacity:1;z-index:5} }
+
+    .overlay-container{
+      position:absolute;top:0;left:50%;width:50%;height:100%;
+      overflow:hidden;transition:transform 0.7s ease-in-out;z-index:100;
+    }
+    .container.right-panel-active .overlay-container{transform:translateX(-100%)}
+
+    .overlay{
+      background:var(--surface2);
+      background:linear-gradient(135deg, var(--surface2) 0%, var(--bg) 100%);
+      color:var(--text);position:relative;left:-100%;height:100%;width:200%;
+      transform:translateX(0);transition:transform 0.7s ease-in-out;
+      border-left:1px solid var(--border);
+    }
+    .container.right-panel-active .overlay{transform:translateX(50%)}
+
+    .overlay-panel{
+      position:absolute;display:flex;align-items:center;justify-content:center;
+      flex-direction:column;padding:0 50px;text-align:center;
+      top:0;height:100%;width:50%;transform:translateX(0);
+      transition:transform 0.7s ease-in-out;
+    }
+    .overlay-left{transform:translateX(-20%)}
+    .container.right-panel-active .overlay-left{transform:translateX(0)}
+    .overlay-right{right:0;transform:translateX(0)}
+    .container.right-panel-active .overlay-right{transform:translateX(20%)}
+
+    form{
+      background:transparent;display:flex;align-items:center;
+      justify-content:center;flex-direction:column;
+      padding:0 50px;height:100%;text-align:center;
+    }
+
+    h1{font-family:var(--font-head);font-weight:800;font-size:2rem;margin-bottom:1rem}
+    p{font-size:0.95rem;line-height:1.6;color:var(--text2);margin-bottom:1.5rem}
+
+    .input-group{width:100%;margin-bottom:1rem;text-align:left}
+    .input-group label{display:block;font-size:0.75rem;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:0.4rem;margin-left:0.5rem}
+    input{
+      width:100%;background:var(--surface2);border:1px solid var(--border);
+      padding:14px 18px;border-radius:14px;color:var(--text);
+      font-family:var(--font-body);font-size:0.95rem;transition:all 0.3s;
+    }
+    input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow)}
+
+    button{
+      margin-top:0.5rem;border-radius:14px;border:none;
+      background:var(--accent);color:#fff;font-size:0.9rem;font-weight:600;
+      padding:14px 40px;letter-spacing:1px;text-transform:uppercase;
+      cursor:pointer;transition:all 0.3s;font-family:var(--font-head);
+    }
+    button:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 10px 20px rgba(0,0,0,0.2)}
+    button:active{transform:translateY(0)}
+    button.ghost{background:transparent;border:1px solid var(--border2);margin-top:1rem}
+    button.ghost:hover{background:rgba(255,255,255,0.03);border-color:var(--text)}
+
+    /* Avatar Selection */
+    .avatar-selection{display:flex;gap:12px;margin:1rem 0}
+    .avatar-opt{
+      width:48px;height:48px;border-radius:12px;cursor:pointer;
+      border:2px solid transparent;transition:0.2s;overflow:hidden;
+      background:var(--surface2);display:flex;align-items:center;justify-content:center;
+    }
+    .avatar-opt img{width:100%;height:100%;object-fit:cover}
+    .avatar-opt.selected{border-color:var(--accent);background:var(--accent-glow)}
+
+    /* Message toast */
+    .msg{
+      position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+      padding:10px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;
+      opacity:0;transition:0.3s;pointer-events:none;z-index:1000;
+    }
+    .msg.show{opacity:1;bottom:30px}
+    .msg-error{background:rgba(240,106,106,0.15);color:var(--rose);border:1px solid rgba(240,106,106,0.3)}
+    .msg-success{background:rgba(24,200,160,0.15);color:var(--teal);border:1px solid rgba(24,200,160,0.3)}
+
+    @media (max-width:768px){
+      .container{height:auto;min-height:650px;width:95%}
+      .overlay-container{display:none}
+      .sign-in-container, .sign-up-container{width:100%;position:relative}
+      .container.right-panel-active .sign-in-container{display:none}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="container" id="auth-container">
+    
+    <div class="form-container sign-up-container">
+      <form id="register-form">
+        <h1>Crear Cuenta</h1>
+        <p>Únete a la nueva era de productividad</p>
+        
+        <div class="avatar-selection">
+          <div class="avatar-opt selected" data-avatar="avatar1.png"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="av"></div>
+          <div class="avatar-opt" data-avatar="avatar2.png"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="av"></div>
+          <div class="avatar-opt" data-avatar="avatar3.png"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jasper" alt="av"></div>
+          <div class="avatar-opt" data-avatar="avatar4.png"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe" alt="av"></div>
+        </div>
+
+        <div class="input-group">
+          <label>Nombre Completo</label>
+          <input type="text" id="reg-name" placeholder="Ej. Alex Rivera" required />
+        </div>
+        <div class="input-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="reg-email" placeholder="nombre@correo.com" required />
+        </div>
+        <div class="input-group">
+          <label>Contraseña</label>
+          <input type="password" id="reg-pass" placeholder="••••••••" required />
+        </div>
+        <button type="submit">Empezar ahora</button>
+        <div id="reg-success" class="msg"></div>
+      </form>
+    </div>
+
+    <div class="form-container sign-in-container">
+      <form id="login-form">
+        <h1>Bienvenido</h1>
+        <p>Tu flujo de trabajo te está esperando</p>
+        <div class="input-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="login-email" placeholder="nombre@correo.com" required />
+        </div>
+        <div class="input-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-pass" placeholder="••••••••" required />
+        </div>
+        <button type="submit">Entrar</button>
+        <div id="login-error" class="msg"></div>
+      </form>
+    </div>
+
+    <div class="overlay-container">
+      <div class="overlay">
+        <div class="overlay-panel overlay-left">
+          <h1>¿Ya eres parte?</h1>
+          <p>Inicia sesión para retomar tus proyectos justo donde los dejaste.</p>
+          <button class="ghost" id="signIn">Ir al Login</button>
+        </div>
+        <div class="overlay-panel overlay-right">
+          <h1>¿Eres nuevo?</h1>
+          <p>Regístrate y descubre una forma más inteligente de gestionar tu equipo.</p>
+          <button class="ghost" id="signUp">Crear Cuenta</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const container = document.getElementById('auth-container');
+    const signUpBtn = document.getElementById('signUp');
+    const signInBtn = document.getElementById('signIn');
+
+    // Cambiar entre Login y Registro
+    signUpBtn.addEventListener('click', () => container.classList.add("right-panel-active"));
+    signInBtn.addEventListener('click', () => container.classList.remove("right-panel-active"));
+
+    // Selección de Avatar
+    let avatarSelected = 'avatar1.png';
+    const avatars = document.querySelectorAll('.avatar-opt');
+    avatars.forEach(av => {
+      av.addEventListener('click', () => {
+        avatars.forEach(a => a.classList.remove('selected'));
+        av.classList.add('selected');
+        avatarSelected = av.dataset.avatar;
+      });
+    });
+
+    // Función para mostrar mensajes visuales (Toast)
+    function showMsg(id, text, type) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'msg show msg-' + type;
+      setTimeout(() => { el.classList.remove('show'); }, 3500);
+    }
+
+    // --- MANEJO DE REGISTRO (CONEXIÓN A PHP) ---
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData();
+      formData.append('action', 'register');
+      formData.append('name', document.getElementById('reg-name').value);
+      formData.append('email', document.getElementById('reg-email').value);
+      formData.append('password', document.getElementById('reg-pass').value);
+      formData.append('avatar', avatarSelected);
+
+      try {
+        const response = await fetch('auth.php', { method: 'POST', body: formData });
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          showMsg('reg-success', '¡Cuenta creada! Inicia sesión ahora.', 'success');
+          setTimeout(() => { container.classList.remove("right-panel-active"); }, 1500);
+        } else {
+          showMsg('reg-success', result.message, 'error');
+        }
+      } catch (error) {
+        showMsg('reg-success', 'Error de conexión con el servidor', 'error');
+      }
+    });
+
+    // --- MANEJO DE LOGIN (CONEXIÓN A PHP) ---
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData();
+      formData.append('action', 'login');
+      formData.append('email', document.getElementById('login-email').value);
+      formData.append('password', document.getElementById('login-pass').value);
+
+      try {
+        const response = await fetch('auth.php', { method: 'POST', body: formData });
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          // Guardamos los datos que devuelve auth.php en el navegador
+          localStorage.setItem('ft_session', JSON.stringify(result.user));
+          showMsg('login-error', 'Acceso correcto. Entrando...', 'success');
+          
+          // Redirigir al Dashboard
+          setTimeout(() => { window.location.href = 'finxtask-dashboard.html'; }, 800);
+        } else {
+          showMsg('login-error', result.message, 'error');
+        }
+      } catch (error) {
+        showMsg('login-error', 'Error al conectar con el servidor', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
