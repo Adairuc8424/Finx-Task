@@ -1,2 +1,2 @@
 # Finx-Task
-app web para gestion y registro de tareas y proyectos colaborativa
+web app for management and registration of collaborative tasks and projects
