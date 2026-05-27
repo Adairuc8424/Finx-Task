@@ -9,6 +9,7 @@ CREATE DATABASE IF NOT EXISTS finxtask_db
   COLLATE utf8mb4_unicode_ci;
 
 USE finxtask_db;
+SET FOREIGN_KEY_CHECKS = 0;
 
 -- ─── 1. USUARIOS ────────────────────────────────────────────
 CREATE TABLE usuarios (
@@ -198,3 +199,4 @@ SELECT
   u.id AS usuario_id, u.nombre, u.email, u.avatar, u.activo
 FROM proyecto_miembros pm
 JOIN usuarios u ON pm.usuario_id = u.id;
+SET FOREIGN_KEY_CHECKS = 1;
